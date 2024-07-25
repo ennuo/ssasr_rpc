@@ -1,0 +1,3 @@
+[submodule "sdk/discord-rpc"]
+	path = sdk/discord-rpc
+	url = https://github.com/discord/discord-rpc.git
