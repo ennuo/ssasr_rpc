@@ -17,7 +17,10 @@ file(GLOB_RECURSE SRC_FILES "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_
 file(GLOB_RECURSE HEADER_FILES "${PROJECT_SOURCE_DIR}/src/*.h")
 
 add_library(${CMAKE_PROJECT_NAME} SHARED ${SRC_FILES} ${HEADER_FILES})
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/src")
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE 
+	"${PROJECT_SOURCE_DIR}/src"
+	"${PROJECT_SOURCE_DIR}/sdk/discord-rpc/include"
+)
 
 if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
