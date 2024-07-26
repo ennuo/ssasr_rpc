@@ -21,7 +21,7 @@ struct RacerInfo {
     bool CheckpointsPassed[16];
     int CheckpointTimes[16];
     int TimeAtLastCheckpoint;
-    int BestLap;
+    unsigned int BestLap;
     bool LastLapWasNewBestLap;
     int TotalTimeForCompletedLaps;
     int* LapTimes;
@@ -83,6 +83,7 @@ char* GetRacerDisplayName();
 
 int GetNumActiveRacers();
 int GetCurrentDisplayLap();
+int GetCurrentRacePosition();
 int GetGameType();
 const char* GetGameTypeDisplayName();
 bool IsRaceReadyToStart();

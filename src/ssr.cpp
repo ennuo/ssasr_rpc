@@ -204,6 +204,13 @@ int GetTrackNameHash()
     return *(int*)(track_setup + 0xc8);
 }
 
+int GetCurrentRacePosition()
+{
+    RacerInfo* info = GetRacerInfo();
+    if (info == nullptr) return -1;
+    return info->CurrentPosition;
+}
+
 int GetCurrentDisplayLap()
 {
     int game_type = GetGameType();

@@ -2,9 +2,11 @@
 #include <discord_rpc.h>
 #include <fmt/core.h>
 
-#include <iostream>
-#include <stdio.h>
 #include <time.h>
+
+#include <algorithm>
+#include <cctype>
+#include <string>
 
 #include "ssr.h"
 
@@ -33,37 +35,57 @@ void UpdateRichPresence_NotRacing()
     Discord_UpdatePresence(&presence);
 }
 
+std::string MakePositionDisplay(int position)
+{
+    position = position + 1;
+    std::string suffix;
+    switch (position)
+    {
+        case 1: suffix = "ˢᵗ"; break;
+        case 2: suffix = "ⁿᵈ"; break;
+        case 3: suffix = "ʳᵈ"; break;
+        default: suffix = "ᵗʰ"; break;
+    }
+
+    return std::to_string(position) + suffix;
+}
+
 void UpdateRichPresence_Racing(unsigned long start_time)
 {
     DiscordRichPresence presence;
     memset(&presence, 0, sizeof(DiscordRichPresence));
     presence.startTimestamp = start_time;
-    presence.details = GetTrackDisplayName();
 
+    int game_type = GetGameType();
+    const char* game_type_name = GetGameTypeDisplayName();
+    std::string details = GetTrackDisplayName();
     RacerInfo* racer = GetRacerInfo();
     std::string state;
-    
+
     // This shouldn't happen, but going to check anyway just in case
-    if (racer == nullptr)
+    if (racer == nullptr) state = game_type_name;
+    else if (game_type == kGameType_TimeTrial)
     {
-        state = GetGameTypeDisplayName();
+        int time = racer->BestLap;
+        state = fmt::format("{} - PB: {}", game_type_name, "--:--:--");
     }
-    else
+    else if (game_type == kGameType_Race || game_type == kGameType_NetworkRace)
     {
-        state = fmt::format("{} (Lap {:d} of {:d})", GetGameTypeDisplayName(), GetCurrentDisplayLap(), racer->NumLaps - 1);
+        state = fmt::format("{} (Lap {:d} of {:d}, {})", game_type_name, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
     }
 
     presence.state = state.c_str();
-    presence.largeImageKey = GetTrackId();
+    presence.details = details.c_str();
+    
+    std::string racer_id = GetRacerId();
+    std::transform(racer_id.begin(), racer_id.end(), racer_id.begin(), 
+        [](unsigned char c) { return std::tolower(c); });
+    presence.smallImageKey = racer_id.c_str();
 
-    char racerImageKey[256];
-    strncpy(racerImageKey, GetRacerId(), 255);
-    racerImageKey[255] = '\0';
-    int len = strlen(racerImageKey);
-    for (int i = 0; i < len; ++i)
-        racerImageKey[i] = tolower(racerImageKey[i]);
-
-    presence.smallImageKey = racerImageKey;
+    // Set track preview image as large image
+    const char* track_id = GetTrackId();
+    if (track_id == nullptr) track_id = "default";
+    presence.largeImageKey = track_id;
     
     Discord_UpdatePresence(&presence);
 }
