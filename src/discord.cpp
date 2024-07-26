@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <discord_rpc.h>
+#include <fmt/core.h>
 
 #include <iostream>
 #include <stdio.h>
@@ -10,9 +11,6 @@
 const char* g_ApplicationID = "1266132218418299004";
 const char* g_SteamID = "34190";
 extern void InitHooks();
-
-// Just setting it to true so it triggers the startup status
-bool g_IsRacing = true;
 
 void InitDiscord()
 {
@@ -28,9 +26,6 @@ void CloseDiscord()
 
 void UpdateRichPresence_NotRacing()
 {
-    if (!g_IsRacing) return;
-    g_IsRacing = false;
-
     DiscordRichPresence presence;
     memset(&presence, 0, sizeof(DiscordRichPresence));
     presence.startTimestamp = time(nullptr);
@@ -38,18 +33,28 @@ void UpdateRichPresence_NotRacing()
     Discord_UpdatePresence(&presence);
 }
 
-void UpdateRichPresence_Racing()
+void UpdateRichPresence_Racing(unsigned long start_time)
 {
-    if (g_IsRacing) return;
-    g_IsRacing = true;
-
     DiscordRichPresence presence;
     memset(&presence, 0, sizeof(DiscordRichPresence));
-    presence.startTimestamp = time(nullptr);
+    presence.startTimestamp = start_time;
     presence.details = GetTrackDisplayName();
-    //presence.state = GetTrackGroupName();
-    presence.state = GetGameTypeDisplayName();
-    presence.largeImageKey = "default";
+
+    RacerInfo* racer = GetRacerInfo();
+    std::string state;
+    
+    // This shouldn't happen, but going to check anyway just in case
+    if (racer == nullptr)
+    {
+        state = GetGameTypeDisplayName();
+    }
+    else
+    {
+        state = fmt::format("{} (Lap {:d} of {:d})", GetGameTypeDisplayName(), GetCurrentDisplayLap(), racer->NumLaps - 1);
+    }
+
+    presence.state = state.c_str();
+    presence.largeImageKey = GetTrackId();
 
     char racerImageKey[256];
     strncpy(racerImageKey, GetRacerId(), 255);
@@ -59,7 +64,6 @@ void UpdateRichPresence_Racing()
         racerImageKey[i] = tolower(racerImageKey[i]);
 
     presence.smallImageKey = racerImageKey;
-    //presence.smallImageText = GetRacerDisplayName();
     
     Discord_UpdatePresence(&presence);
 }

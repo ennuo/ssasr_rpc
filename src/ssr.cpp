@@ -4,14 +4,66 @@
 #include <map>
 #include <string>
 
+std::map<int, const char*> g_TrackGroupMap =
+{
+    { sumohash("billyhatcher_easy"), "Blizzard Castle" },
+    { sumohash("seasidehill_easy"), "Seaside Hill" },
+    { sumohash("samba_easy"), "Carnival Town" },
+    { sumohash("smb_easy"), "Jumble Jungle" },
+    { sumohash("jetsetradio_easy"), "Tokyo-to" },
+    { sumohash("houseofthedead_easy"), "Curien Mansion" },
+    { sumohash("finalfortress_easy"), "Final Fortress" },
+    { sumohash("casinopark_easy"), "Casino Park" },
+    { sumohash("billyhatcher_medium"), "Blizzard Castle" },
+    { sumohash("seasidehill_medium"), "Seaside Hill" },
+    { sumohash("samba_medium"), "Carnival Town" },
+    { sumohash("smb_medium"), "Detritus Desert" },
+    { sumohash("jetsetradio_medium"), "Tokyo-to" },
+    { sumohash("houseofthedead_medium"), "Curien Mansion" },
+    { sumohash("finalfortress_medium"), "Final Fortress" },
+    { sumohash("casinopark_medium"), "Casino Park" },
+    { sumohash("billyhatcher_hard"), "Dino Mountain" },
+    { sumohash("seasidehill_hard"), "Seaside Hill" },
+    { sumohash("samba_hard"), "Carnival Town" },
+    { sumohash("smb_hard"), "Pirates Ocean" },
+    { sumohash("jetsetradio_hard"), "Tokyo-to" },
+    { sumohash("houseofthedead_hard"), "Curien Mansion" },
+    { sumohash("finalfortress_hard"), "Final Fortress" },
+    { sumohash("casinopark_hard"), "Casino Park" },
+    { sumohash("monkeyball_arena"), "Jumble Jungle" },
+    { sumohash("hotd_arena"), "Curien Mansion" },
+    { sumohash("seasidehill_arena"), "Seaside Hill" },
+};
+
 std::map<int, const char*> g_TrackNameMap =
 {
-    { sumohash("seasidehill_easy"), "Whale Lagoon" },
-    { sumohash("seasidehill_medium"), "Ocean Ruin" },
-    { sumohash("seasidehill_hard"), "Lost Palace" },
-    { sumohash("samba_easy"), "Sunshine Tour" },
     { sumohash("billyhatcher_easy"), "Icicle Valley" },
-    
+    { sumohash("seasidehill_easy"), "Whale Lagoon" },
+    { sumohash("samba_easy"), "Sunshine Tour" },
+    { sumohash("smb_easy"), "Treetops" },
+    { sumohash("jetsetradio_easy"), "Shibuya Downtown" },
+    { sumohash("houseofthedead_easy"), "Outer Forest" },
+    { sumohash("finalfortress_easy"), "Turbine Loop" },
+    { sumohash("casinopark_easy"), "Pinball Highway" },
+    { sumohash("billyhatcher_medium"), "Rampart Road" },
+    { sumohash("seasidehill_medium"), "Ocean Ruin" },
+    { sumohash("samba_medium"), "Jump Parade" },
+    { sumohash("smb_medium"), "Sandy Drifts" },
+    { sumohash("jetsetradio_medium"), "Rokkaku Hill" },
+    { sumohash("houseofthedead_medium"), "Sewer Scrapes" },
+    { sumohash("finalfortress_medium"), "Dark Arsenal" },
+    { sumohash("casinopark_medium"), "Roulette Road" },
+    { sumohash("billyhatcher_hard"), "Lava Lair" },
+    { sumohash("seasidehill_hard"), "Lost Palace" },
+    { sumohash("samba_hard"), "Rocky-Coaster" },
+    { sumohash("smb_hard"), "Monkey Target" },
+    { sumohash("jetsetradio_hard"), "Highway Zero" },
+    { sumohash("houseofthedead_hard"), "Deadly Route" },
+    { sumohash("finalfortress_hard"), "Thunder Deck" },
+    { sumohash("casinopark_hard"), "Bingo Party" },
+    { sumohash("monkeyball_arena"), "Rumble Ramps" },
+    { sumohash("hotd_arena"), "Grave Hard" },
+    { sumohash("seasidehill_arena"), "Seaside Square" },
 };
 
 char* GetRaceManager()
@@ -43,7 +95,27 @@ char* GetTrackSetup()
     return *(char**)(circuit_data + 0x1f0);
 }
 
-char* GetRacerSetup()
+RacerInfo* GetRacerInfo()
+{
+    const int RACER_INFOS_ADDRESS = 0x8F7A68;
+    RacerInfo* racers = (RacerInfo*)LoadPointer(RACER_INFOS_ADDRESS);
+    if (racers == nullptr) return nullptr;
+
+    char* my_racer = GetRacer();
+    if (my_racer == nullptr) return nullptr;
+
+    int num_racers = GetNumActiveRacers();
+    for (int i = 0; i < num_racers; ++i)
+    {
+        RacerInfo* info = &racers[i];
+        if (info->MyRacer == my_racer)
+            return info;
+    }
+
+    return nullptr;
+}
+
+char* GetRacer()
 {
     char* manager = GetRaceManager();
     if (manager == nullptr) return nullptr;
@@ -61,12 +133,20 @@ char* GetRacerSetup()
             int type = *(int*)(control + 0x18);
             // Type 1 is player, 2 is AI, 3 is network player?
             if (type == 1)
-                return *(char**)(racer_data + 0x1f0);
+                return racer_data;
         }
 
         racer_data += 0x2110;
     }
 
+    return nullptr;
+}
+
+char* GetRacerSetup()
+{
+    char* racer = GetRacer();
+    if (racer != nullptr)
+        return *(char**)(racer + 0x1f0);
     return nullptr;
 }
 
@@ -124,19 +204,62 @@ int GetTrackNameHash()
     return *(int*)(track_setup + 0xc8);
 }
 
+int GetCurrentDisplayLap()
+{
+    int game_type = GetGameType();
+    RacerInfo* info = GetRacerInfo();
+    if (info == nullptr) return 1;
+
+    int laps;
+
+    int num_laps = info->NumLaps;
+    int laps_completed = info->NumLapsCompleted;
+    int current_lap = info->CurrentLap;
+
+    switch (game_type)
+    {
+        case kGameType_TimeTrial:
+        {
+            laps = 99;
+            if (laps_completed < 99)
+                laps = laps_completed + 1;
+            break;
+        }
+
+        case kGameType_Race:
+        case kGameType_NetworkRace:
+        {
+            laps = current_lap;
+            if (laps == 0) laps = 1;
+            else if (num_laps <= laps)
+                laps = num_laps - 1;
+            
+            break;
+        }
+
+        default:
+        {
+            laps = 1;
+            break;
+        }
+    }
+
+    return laps;
+}
+
 const char* GetGameTypeDisplayName()
 {
     int type = GetGameType();
     switch (type)
     {
         // Game seems to idle in the Race state if no other
-        case 1: return "Single Race";
-
-        case 2: return "Time Trial";
-        case 3: return "Mission";
-        case 4: return "Car Viewer";
-        case 5: return "Network Race";
-        case 6: return "TSO Viewer";
+        case kGameType_Race: return "Single Race";
+        
+        case kGameType_TimeTrial: return "Time Trial";
+        case kGameType_Mission: return "Mission";
+        case kGameType_CarViewer: return "Car Viewer";
+        case kGameType_NetworkRace: return "Network Race";
+        case kGameType_TsoViewer: return "TSO Viewer";
         
         default: return "Invalid";
     }

@@ -3,6 +3,17 @@
 
 #include "native.h"
 
+enum GameType
+{
+    kGameType_None,
+    kGameType_Race,
+    kGameType_TimeTrial,
+    kGameType_Mission,
+    kGameType_CarViewer,
+    kGameType_NetworkRace,
+    kGameType_TsoViewer
+};
+
 struct RacerInfo {
     float MissionScore;
     int MissionRank;
@@ -57,19 +68,23 @@ struct ExcelData {
 };
 
 ExcelData* GetTrackParams();
-int GetNumActiveRacers();
-char* GetRacerSetup();
 char* GetTrackSetup();
-char* GetTrackGroupName();
 char* GetTrackId();
-char* GetRacerId();
-char* GetRacerDisplayName();
-int GetGameType();
-int GetRacerNameHash();
 int GetTrackNameHash();
 const char* GetTrackDisplayName();
+char* GetTrackGroupName();
+
+char* GetRacer();
+RacerInfo* GetRacerInfo();
+char* GetRacerSetup();
+char* GetRacerId();
+int GetRacerNameHash();
+char* GetRacerDisplayName();
+
+int GetNumActiveRacers();
+int GetCurrentDisplayLap();
+int GetGameType();
 const char* GetGameTypeDisplayName();
 bool IsRaceReadyToStart();
-
 
 #endif // SSR_H
