@@ -260,7 +260,7 @@ const char* GetGameTypeDisplayName()
     switch (type)
     {
         // Game seems to idle in the Race state if no other
-        case kGameType_Race: return "Single Race";
+        case kGameType_Race: return "Race";
         
         case kGameType_TimeTrial: return "Time Trial";
         case kGameType_Mission: return "Mission";
