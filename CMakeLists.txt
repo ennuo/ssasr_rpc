@@ -20,6 +20,7 @@ add_library(${CMAKE_PROJECT_NAME} SHARED ${SRC_FILES} ${HEADER_FILES})
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE 
 	"${PROJECT_SOURCE_DIR}/src"
 	"${PROJECT_SOURCE_DIR}/sdk/discord-rpc/include"
+	"${PROJECT_SOURCE_DIR}/minhook/discord-rpc/include"
 )
 
 if (MSVC)
@@ -29,6 +30,8 @@ endif()
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_EXAMPLES OFF CACHE BOOL "Don't build discord-rpc examples" FORCE)
 add_subdirectory(sdk/discord-rpc)
+add_subdirectory(sdk/minhook)
 
+target_link_libraries(${CMAKE_PROJECT_NAME} discord-rpc minhook)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} discord-rpc)
+set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME "dinput8")

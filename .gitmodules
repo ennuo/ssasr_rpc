@@ -1,3 +1,6 @@
 [submodule "sdk/discord-rpc"]
 	path = sdk/discord-rpc
 	url = https://github.com/discord/discord-rpc.git
+[submodule "sdk/minhook"]
+	path = sdk/minhook
+	url = https://github.com/TsudaKageyu/minhook.git

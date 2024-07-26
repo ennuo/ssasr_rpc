@@ -2,7 +2,8 @@
 
 DirectInput8Create_t oDirectInput8Create = nullptr;
 HMODULE DInput8Dll;
-extern DWORD WINAPI RpcMain(LPVOID lpParameter);
+extern void RpcMain();
+void* g_MemoryBase;
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
@@ -18,6 +19,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             if (!DInput8Dll) return FALSE;
 
             oDirectInput8Create = (DirectInput8Create_t)GetProcAddress(DInput8Dll, "DirectInput8Create");
+            g_MemoryBase = (void*)GetModuleHandleA(nullptr);
 
             break;
         }
@@ -38,8 +40,8 @@ DINPUT8_API HRESULT WINAPI DirectInput8Create(HINSTANCE hinst, DWORD dwVersion, 
 {
     #pragma comment(linker, "/EXPORT:" __FUNCTION__"=" __FUNCDNAME__)
 
-    CreateThread(NULL, 0, RpcMain, NULL, 0, NULL);
-
+    RpcMain();
+    
     if (oDirectInput8Create)
         return oDirectInput8Create(hinst, dwVersion, riidltf, ppvOut, punkOuter);
     return S_FALSE;
