@@ -38,10 +38,10 @@ void __fastcall OnLapComplete(void* self)
     // Actually is it only triggered when we're in the race finish segment?
     if (g_IsRacing)
     {
-        int pos = GetCurrentRacePosition();
-        if (g_LastRacePosition != pos)
+        int lap = GetCurrentDisplayLap();
+        if (g_LastLapCheck != lap)
         {
-            g_LastRacePosition = pos;
+            g_LastLapCheck = lap;
             UpdateRichPresence_Racing(g_RaceStartTime);
         }
     }
