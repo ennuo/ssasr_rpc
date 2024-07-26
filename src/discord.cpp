@@ -35,6 +35,29 @@ void UpdateRichPresence_NotRacing()
     Discord_UpdatePresence(&presence);
 }
 
+std::string GetLapTimeString(unsigned int time)
+{
+    if (time == -1 || time == 0)
+        return "--:--.---";
+
+    unsigned int logic_rate = GetGameLogicRate();
+
+    // There's probably some nicer way to represent this, but I just stole
+    // it straight from the Ghidra disassembly.
+
+    unsigned int fractional = ((time % (logic_rate << 0xc)) * 1000) / logic_rate >> 0xc;
+    unsigned int seconds = time / logic_rate >> 0xc;
+    unsigned int minutes = seconds / 0x3c;
+    if (minutes / 0x3c != 0)
+    {
+        seconds = 0x3b;
+        minutes = 0x3b;
+        fractional = 999;
+    }
+
+    return fmt::format("{:02d}:{:02d}.{:03d}", minutes % 0x3c, seconds % 0x3c, fractional);
+}
+
 std::string MakePositionDisplay(int position)
 {
     position = position + 1;
@@ -60,18 +83,26 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     const char* game_type_name = GetGameTypeDisplayName();
     std::string details = GetTrackDisplayName();
     RacerInfo* racer = GetRacerInfo();
-    std::string state;
+    std::string state = game_type_name;
 
     // This shouldn't happen, but going to check anyway just in case
-    if (racer == nullptr) state = game_type_name;
-    else if (game_type == kGameType_TimeTrial)
+    if (racer != nullptr)
     {
-        int time = racer->BestLap;
-        state = fmt::format("{} - PB: {}", game_type_name, "--:--:--");
-    }
-    else if (game_type == kGameType_Race || game_type == kGameType_NetworkRace)
-    {
-        state = fmt::format("{} (Lap {:d} of {:d}, {})", game_type_name, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+        switch (game_type)
+        {
+            case kGameType_TimeTrial:
+            {
+                state = fmt::format("{} - PB: {}", game_type_name, GetLapTimeString(GetBestLap()));
+                break;
+            }
+
+            case kGameType_Race:
+            case kGameType_NetworkRace:
+            {
+                state = fmt::format("{} (Lap {:d} of {:d}, {})", game_type_name, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+                break;
+            }
+        }
     }
 
     presence.state = state.c_str();

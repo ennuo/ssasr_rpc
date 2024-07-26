@@ -8,9 +8,16 @@
 
 // Just setting it to true so it triggers the startup status
 bool g_IsRacing = true;
+
+// Bunch of state variables so we're not constantly updating
+// the rich presence when we don't have to.
 int g_LastLapCheck = -1;
 int g_LastRacePosition = -1;
+unsigned int g_LastBestTime;
 unsigned long g_RaceStartTime;
+
+// Function calls from the game
+GetBestLap_t GetBestLapFromLicense = nullptr;
 
 void(__thiscall *RaceHandler_UpdateCurrentPositions)(void*);
 void __fastcall OnUpdateCurrentPositions(void* self)
@@ -21,7 +28,6 @@ void __fastcall OnUpdateCurrentPositions(void* self)
         if (g_LastRacePosition != pos)
         {
             g_LastRacePosition = pos;
-
             UpdateRichPresence_Racing(g_RaceStartTime);
         }
     }
@@ -38,11 +44,24 @@ void __fastcall OnLapComplete(void* self)
     // Actually is it only triggered when we're in the race finish segment?
     if (g_IsRacing)
     {
-        int lap = GetCurrentDisplayLap();
-        if (g_LastLapCheck != lap)
+        int game_type = GetGameType();
+        if (game_type == kGameType_TimeTrial)
         {
-            g_LastLapCheck = lap;
-            UpdateRichPresence_Racing(g_RaceStartTime);
+            unsigned int time = GetBestLap();
+            if (time != g_LastBestTime)
+            {
+                g_LastBestTime = time;
+                UpdateRichPresence_Racing(g_RaceStartTime);
+            }
+        }
+        else
+        {
+            int lap = GetCurrentDisplayLap();
+            if (g_LastLapCheck != lap)
+            {
+                g_LastLapCheck = lap;
+                UpdateRichPresence_Racing(g_RaceStartTime);
+            }
         }
     }
 
@@ -60,6 +79,7 @@ void __cdecl OnRaceHandlerCleanup(bool b)
         UpdateRichPresence_NotRacing();
         g_LastLapCheck = -1;
         g_LastRacePosition = -1;
+        g_LastBestTime = -1;
         g_IsRacing = false;
     }
 
@@ -90,4 +110,6 @@ void InitHooks()
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xED320), (void*)&OnLapComplete, (void**)&Racer_OnLapComplete);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCD090), (void*)&OnUpdateCurrentPositions, (void**)&RaceHandler_UpdateCurrentPositions);
     MH_EnableHook(MH_ALL_HOOKS);
+    
+    GetBestLapFromLicense = (GetBestLap_t)((uintptr_t)g_MemoryBase + 0xBA1C0);
 }

@@ -66,6 +66,12 @@ std::map<int, const char*> g_TrackNameMap =
     { sumohash("seasidehill_arena"), "Seaside Square" },
 };
 
+PyramidBlock* GetCurrentMission()
+{
+    const int CURRENT_MISSION_ADDRESS = 0x912BE0;
+    return (PyramidBlock*)LoadPointer(CURRENT_MISSION_ADDRESS);
+}
+
 char* GetRaceManager()
 {
     const int RACE_MANAGER_ADDRESS = 0x829FC0;
@@ -182,6 +188,28 @@ int GetGameType()
 {
     const int GAME_TYPE_ADDRESS = 0x8F7A58;
     return LoadMemory<int>(GAME_TYPE_ADDRESS);
+}
+
+unsigned int GetGameLogicRate()
+{
+    const int GAME_LOGIC_RATE_ADDRESS = 0x82A020;
+    return LoadMemory<unsigned int>(GAME_LOGIC_RATE_ADDRESS);
+}
+
+unsigned int GetBestLap()
+{
+    int hash = GetTrackNameHash();
+    unsigned int saved_time = GetBestLapFromLicense(hash, 0).Time;
+    unsigned int local_time = saved_time;
+
+    RacerInfo* info = GetRacerInfo();
+    if (info != nullptr)
+        local_time = info->BestLap;
+    
+    if (local_time == 0 || local_time == -1) return saved_time;
+
+    // I assume generic comparison works for this
+    return local_time < saved_time ? local_time : saved_time;
 }
 
 bool IsRaceReadyToStart()

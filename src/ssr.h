@@ -14,6 +14,19 @@ enum GameType
     kGameType_TsoViewer
 };
 
+struct PyramidBlock {
+    const char* DisplayName;
+    const char* MissionName;
+    unsigned int MissionHash;
+    unsigned int StarsToUnlock;
+    unsigned int Tier;
+    unsigned int MissionNumber;
+    unsigned int BestScore;
+    unsigned int NumStars;
+    bool Played;
+    bool InitiallyUnlocked;
+};
+
 struct RacerInfo {
     float MissionScore;
     int MissionRank;
@@ -33,6 +46,12 @@ struct RacerInfo {
     int NumLaps;
     float InitialTrackDistance;
     void* MyRacer;
+};
+
+struct BestTime {
+    unsigned int RacerHash;
+    unsigned int Time;
+    bool UserSet;
 };
 
 struct ExcelCellData {
@@ -67,6 +86,8 @@ struct ExcelData {
     Worksheet* Worksheets[1];
 };
 
+PyramidBlock* GetCurrentMission();
+
 ExcelData* GetTrackParams();
 char* GetTrackSetup();
 char* GetTrackId();
@@ -81,11 +102,18 @@ char* GetRacerId();
 int GetRacerNameHash();
 char* GetRacerDisplayName();
 
+unsigned int GetGameLogicRate();
 int GetNumActiveRacers();
 int GetCurrentDisplayLap();
 int GetCurrentRacePosition();
 int GetGameType();
 const char* GetGameTypeDisplayName();
 bool IsRaceReadyToStart();
+
+typedef BestTime&(__stdcall *GetBestLap_t)(int track, int index);
+extern GetBestLap_t GetBestLapFromLicense;
+unsigned int GetBestLap();
+
+// 0x004ba1c0
 
 #endif // SSR_H
