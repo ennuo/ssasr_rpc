@@ -199,11 +199,6 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     const char* track_id = GetTrackId();
     if (track_id == nullptr) track_id = "default";
     presence.largeImageKey = track_id;
-
-
-
-    std::string debug = fmt::format("{}, {}, {}, {}", (unsigned int)GetCurrentTournament(), GetCurrentTournamentStageIndex(), GetCupNumber(), GetGameType());
-    presence.smallImageText = debug.c_str();
     
     Discord_UpdatePresence(&presence);
 }
