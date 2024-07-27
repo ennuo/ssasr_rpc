@@ -93,6 +93,11 @@ MissionInfo* GetMissionInfo();
 int GetNumEliminated();
 int GetBossHealth();
 
+char* GetCurrentTournament();
+bool InTournament();
+int GetCurrentTournamentStageIndex();
+int GetCupNumber();
+
 ExcelData* GetTrackParams();
 char* GetTrackSetup();
 char* GetTrackId();

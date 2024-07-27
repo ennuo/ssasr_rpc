@@ -18,6 +18,17 @@ extern void CloseHooks();
 const int g_NumRankStrings = 7;
 const char* g_RankStrings[] = { "AAA", "AA", "A", "B", "C", "D", "E" };
 
+const int g_NumTournaments = 6;
+const char* g_Tournaments[] = {
+    "CHAO CUP",
+    "GRAFFITI CUP",
+    "EGG CUP",
+    "HORROR CUP",
+    "SAMBA CUP",
+    "MONKEY CUP",
+    "SEASIDE CUP"
+};
+
 void InitDiscord()
 {
     DiscordEventHandlers handlers;
@@ -121,7 +132,18 @@ void UpdateRichPresence_Racing(unsigned long start_time)
             case kGameType_Race:
             case kGameType_NetworkRace:
             {
-                details_type = kPresenceDetails_Race;
+                if (InTournament())
+                {
+                    details_type = kPresenceDetails_GrandPrix;
+                    presence.largeImageText = GetTrackDisplayName();
+
+                    int cup = GetCupNumber();
+                    details = "MISTAKES WERE MADE CUP";
+                    if (cup >= 0 && cup < g_NumTournaments)
+                        details = g_Tournaments[cup];
+                }
+                else details_type = kPresenceDetails_Race;
+
                 break;
             }
         }
@@ -129,9 +151,14 @@ void UpdateRichPresence_Racing(unsigned long start_time)
         switch (details_type)
         {
             case kPresenceDetails_Race:
+            {
+                state = fmt::format("{} - Lap {:d} of {:d}, {}", state, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+                break;
+            }
             case kPresenceDetails_GrandPrix:
             {
-                state = fmt::format("{} (Lap {:d} of {:d}, {})", state, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+                state = fmt::format("Race {:d} - Lap {:d} of {:d}, {}", 
+                    GetCurrentTournamentStageIndex() + 1, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
                 break;
             }
             case kPresenceDetails_TimeTrial:
@@ -172,6 +199,11 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     const char* track_id = GetTrackId();
     if (track_id == nullptr) track_id = "default";
     presence.largeImageKey = track_id;
+
+
+
+    std::string debug = fmt::format("{}, {}, {}, {}", (unsigned int)GetCurrentTournament(), GetCurrentTournamentStageIndex(), GetCupNumber(), GetGameType());
+    presence.smallImageText = debug.c_str();
     
     Discord_UpdatePresence(&presence);
 }

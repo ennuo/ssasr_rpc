@@ -53,6 +53,29 @@ int GetBossHealth()
     return 0;
 }
 
+char* GetCurrentTournament()
+{
+    const int TOURNAMENT_ADDRESS = 0x9124F0;
+    return LoadPointer(TOURNAMENT_ADDRESS);
+}
+
+int GetCurrentTournamentStageIndex()
+{
+    const int STAGE_INDEX_ADDRESS = 0x9124F4;
+    return LoadMemory<int>(STAGE_INDEX_ADDRESS);
+}
+
+int GetCupNumber()
+{
+    const int CUP_NUMBER_ADDRESS = 0x9124E0;
+    return LoadMemory<int>(CUP_NUMBER_ADDRESS);
+}
+
+bool InTournament()
+{
+    return GetCurrentTournament() != nullptr;
+}
+
 char* GetRaceManager()
 {
     const int RACE_MANAGER_ADDRESS = 0x829FC0;
