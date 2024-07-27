@@ -2,6 +2,7 @@
 #define SSR_H
 
 #include "native.h"
+#include "lookup.h"
 
 enum GameType
 {
@@ -87,6 +88,8 @@ struct ExcelData {
 };
 
 PyramidBlock* GetCurrentMission();
+char* GetRaceMission();
+MissionInfo* GetMissionInfo();
 
 ExcelData* GetTrackParams();
 char* GetTrackSetup();
@@ -113,7 +116,5 @@ bool IsRaceReadyToStart();
 typedef BestTime&(__stdcall *GetBestLap_t)(int track, int index);
 extern GetBestLap_t GetBestLapFromLicense;
 unsigned int GetBestLap();
-
-// 0x004ba1c0
 
 #endif // SSR_H

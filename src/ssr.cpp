@@ -1,75 +1,27 @@
 #include "ssr.h"
-#include "jenkins.h"
-
-#include <map>
-#include <string>
-
-std::map<int, const char*> g_TrackGroupMap =
-{
-    { sumohash("billyhatcher_easy"), "Blizzard Castle" },
-    { sumohash("seasidehill_easy"), "Seaside Hill" },
-    { sumohash("samba_easy"), "Carnival Town" },
-    { sumohash("smb_easy"), "Jumble Jungle" },
-    { sumohash("jetsetradio_easy"), "Tokyo-to" },
-    { sumohash("houseofthedead_easy"), "Curien Mansion" },
-    { sumohash("finalfortress_easy"), "Final Fortress" },
-    { sumohash("casinopark_easy"), "Casino Park" },
-    { sumohash("billyhatcher_medium"), "Blizzard Castle" },
-    { sumohash("seasidehill_medium"), "Seaside Hill" },
-    { sumohash("samba_medium"), "Carnival Town" },
-    { sumohash("smb_medium"), "Detritus Desert" },
-    { sumohash("jetsetradio_medium"), "Tokyo-to" },
-    { sumohash("houseofthedead_medium"), "Curien Mansion" },
-    { sumohash("finalfortress_medium"), "Final Fortress" },
-    { sumohash("casinopark_medium"), "Casino Park" },
-    { sumohash("billyhatcher_hard"), "Dino Mountain" },
-    { sumohash("seasidehill_hard"), "Seaside Hill" },
-    { sumohash("samba_hard"), "Carnival Town" },
-    { sumohash("smb_hard"), "Pirates Ocean" },
-    { sumohash("jetsetradio_hard"), "Tokyo-to" },
-    { sumohash("houseofthedead_hard"), "Curien Mansion" },
-    { sumohash("finalfortress_hard"), "Final Fortress" },
-    { sumohash("casinopark_hard"), "Casino Park" },
-    { sumohash("monkeyball_arena"), "Jumble Jungle" },
-    { sumohash("hotd_arena"), "Curien Mansion" },
-    { sumohash("seasidehill_arena"), "Seaside Hill" },
-};
-
-std::map<int, const char*> g_TrackNameMap =
-{
-    { sumohash("billyhatcher_easy"), "Icicle Valley" },
-    { sumohash("seasidehill_easy"), "Whale Lagoon" },
-    { sumohash("samba_easy"), "Sunshine Tour" },
-    { sumohash("smb_easy"), "Treetops" },
-    { sumohash("jetsetradio_easy"), "Shibuya Downtown" },
-    { sumohash("houseofthedead_easy"), "Outer Forest" },
-    { sumohash("finalfortress_easy"), "Turbine Loop" },
-    { sumohash("casinopark_easy"), "Pinball Highway" },
-    { sumohash("billyhatcher_medium"), "Rampart Road" },
-    { sumohash("seasidehill_medium"), "Ocean Ruin" },
-    { sumohash("samba_medium"), "Jump Parade" },
-    { sumohash("smb_medium"), "Sandy Drifts" },
-    { sumohash("jetsetradio_medium"), "Rokkaku Hill" },
-    { sumohash("houseofthedead_medium"), "Sewer Scrapes" },
-    { sumohash("finalfortress_medium"), "Dark Arsenal" },
-    { sumohash("casinopark_medium"), "Roulette Road" },
-    { sumohash("billyhatcher_hard"), "Lava Lair" },
-    { sumohash("seasidehill_hard"), "Lost Palace" },
-    { sumohash("samba_hard"), "Rocky-Coaster" },
-    { sumohash("smb_hard"), "Monkey Target" },
-    { sumohash("jetsetradio_hard"), "Highway Zero" },
-    { sumohash("houseofthedead_hard"), "Deadly Route" },
-    { sumohash("finalfortress_hard"), "Thunder Deck" },
-    { sumohash("casinopark_hard"), "Bingo Party" },
-    { sumohash("monkeyball_arena"), "Rumble Ramps" },
-    { sumohash("hotd_arena"), "Grave Hard" },
-    { sumohash("seasidehill_arena"), "Seaside Square" },
-};
 
 PyramidBlock* GetCurrentMission()
 {
     const int CURRENT_MISSION_ADDRESS = 0x912BE0;
     return (PyramidBlock*)LoadPointer(CURRENT_MISSION_ADDRESS);
+}
+
+char* GetRaceMission()
+{
+    const int RACE_MISSION_ADDRESS = 0x911B18;
+    return GetAddress(RACE_MISSION_ADDRESS);
+}
+
+MissionInfo* GetMissionInfo()
+{
+    PyramidBlock* block = GetCurrentMission();
+    if (block == nullptr) return nullptr;
+
+    auto iter = g_MissionInfoMap.find(block->MissionHash);
+    if (iter != g_MissionInfoMap.end())
+        return &g_MissionInfoMap[block->MissionHash];
+
+    return nullptr;
 }
 
 char* GetRaceManager()

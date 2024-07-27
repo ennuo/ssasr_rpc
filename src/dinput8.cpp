@@ -3,11 +3,12 @@
 DirectInput8Create_t oDirectInput8Create = nullptr;
 HMODULE DInput8Dll;
 extern void RpcMain();
+extern void RpcClose();
 void* g_MemoryBase;
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+BOOL APIENTRY DllMain(HMODULE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
-    switch (ul_reason_for_call)
+    switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
         {
@@ -28,6 +29,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
             break;
         case DLL_PROCESS_DETACH:
         {
+            RpcClose();
             FreeLibrary(DInput8Dll);
             break;
         }
