@@ -24,6 +24,35 @@ MissionInfo* GetMissionInfo()
     return nullptr;
 }
 
+int GetNumEliminated()
+{
+    const int NUM_ELIMINATED_ADDRESS = 0x8F7A60;
+    return (int)LoadMemory<char>(NUM_ELIMINATED_ADDRESS);
+}
+
+int GetBossHealth()
+{
+    char* mission = GetRaceMission();
+    if (mission == nullptr) return 0;
+
+    int score_type = Mission_lpGetScoreType(mission);
+    if (score_type == 0x34)
+    {
+        void* boss_plugin = Mission_lpGetPlugin(mission, 0x1e);
+        if (boss_plugin != 0)
+        {
+            float initial_health = *(float*)((uintptr_t)boss_plugin + 0x42c);
+            float health = *(float*)((uintptr_t)boss_plugin + 0x428);
+
+            if (initial_health == 0.0f) return 0;
+            
+            return (int)((health / initial_health) * 100.0f);
+        }
+    }
+
+    return 0;
+}
+
 char* GetRaceManager()
 {
     const int RACE_MANAGER_ADDRESS = 0x829FC0;
@@ -215,6 +244,7 @@ int GetCurrentDisplayLap()
 
         case kGameType_Race:
         case kGameType_NetworkRace:
+        case kGameType_Mission:
         {
             laps = current_lap;
             if (laps == 0) laps = 1;

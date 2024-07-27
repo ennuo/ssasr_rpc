@@ -90,6 +90,8 @@ struct ExcelData {
 PyramidBlock* GetCurrentMission();
 char* GetRaceMission();
 MissionInfo* GetMissionInfo();
+int GetNumEliminated();
+int GetBossHealth();
 
 ExcelData* GetTrackParams();
 char* GetTrackSetup();
@@ -114,7 +116,13 @@ const char* GetGameTypeDisplayName();
 bool IsRaceReadyToStart();
 
 typedef BestTime&(__stdcall *GetBestLap_t)(int track, int index);
+typedef int(__fastcall *Mission_lpGetScoreType_t)(void* mission);
+typedef void*(__thiscall *Mission_lpGetPlugin_t)(void* mission, int plugin);
+
 extern GetBestLap_t GetBestLapFromLicense;
+extern Mission_lpGetScoreType_t Mission_lpGetScoreType;
+extern Mission_lpGetPlugin_t Mission_lpGetPlugin;
+
 unsigned int GetBestLap();
 
 #endif // SSR_H

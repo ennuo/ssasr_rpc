@@ -86,6 +86,7 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     MissionInfo* mission = GetMissionInfo();
 
     int game_type = GetGameType();
+    int details_type = kPresenceDetails_None;
 
     // Some missions use race/gp game types, and I don't want to deal with them at this very moment
     // will handle it at some point though, probably.
@@ -97,8 +98,6 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     RacerInfo* racer = GetRacerInfo();
     std::string state = game_type_name;
 
-    bool add_race_details = false;
-
     // This shouldn't happen, but going to check anyway just in case
     if (racer != nullptr)
     {
@@ -106,7 +105,7 @@ void UpdateRichPresence_Racing(unsigned long start_time)
         {
             case kGameType_TimeTrial:
             {
-                state = fmt::format("{} - PB: {}", game_type_name, GetLapTimeString(GetBestLap()));
+                details_type = kPresenceDetails_TimeTrial;
                 break;
             }
 
@@ -115,38 +114,50 @@ void UpdateRichPresence_Racing(unsigned long start_time)
                 presence.largeImageText = GetTrackDisplayName();
                 details = mission->Name;
                 state = mission->Type;
-
-                if (strcmp(mission->Type, "Race") == 0 || strcmp(mission->Type, "Grand Prix") == 0)
-                {
-                    add_race_details = true;
-                }
-                else if (strcmp(mission->Type, "Knockout") == 0)
-                {
-                    state = fmt::format("{} - Remaining: {:d}", state, GetNumActiveRacers());
-                }
-                else
-                {
-                    const char* rank = "None";
-                    if (racer->MissionRank >= 0 && racer->MissionRank < g_NumRankStrings)
-                        rank = g_RankStrings[racer->MissionRank];
-                    state = fmt::format("{} - Rank: {}", state, rank);
-                }
-
+                details_type = mission->Presence;
                 break;
             }
 
             case kGameType_Race:
             case kGameType_NetworkRace:
             {
-                add_race_details = true;
+                details_type = kPresenceDetails_Race;
                 break;
             }
         }
-    }
 
-    if (add_race_details)
-    {
-        state = fmt::format("{} (Lap {:d} of {:d}, {})", state, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+        switch (details_type)
+        {
+            case kPresenceDetails_Race:
+            case kPresenceDetails_GrandPrix:
+            {
+                state = fmt::format("{} (Lap {:d} of {:d}, {})", state, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+                break;
+            }
+            case kPresenceDetails_TimeTrial:
+            {
+                state = fmt::format("{} - PB: {}", game_type_name, GetLapTimeString(GetBestLap()));
+                break;
+            }
+            case kPresenceDetails_Elimination:
+            {
+                state = fmt::format("{} - Remaining: {:d}", state, GetNumActiveRacers() - GetNumEliminated());
+                break;
+            }
+            case kPresenceDetails_Boss:
+            {
+                state = fmt::format("{} - Boss Health: {:d}%", state, GetBossHealth());
+                break;
+            }
+            case kPresenceDetails_Rank:
+            {
+                const char* rank = "None";
+                if (racer->MissionRank >= 0 && racer->MissionRank < g_NumRankStrings)
+                    rank = g_RankStrings[racer->MissionRank];
+                state = fmt::format("{} - Rank: {}", state, rank);
+                break;
+            }
+        }
     }
 
     presence.state = state.c_str();

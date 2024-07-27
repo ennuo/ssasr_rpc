@@ -11,14 +11,18 @@ bool g_IsRacing = true;
 
 // Bunch of state variables so we're not constantly updating
 // the rich presence when we don't have to.
-int g_LastLapCheck = -1;
-int g_LastRacePosition = -1;
-int g_LastRank = -1;
-unsigned int g_LastBestTime;
+int g_Lap = -1;
+int g_RacePosition = -1;
+int g_MissionRank = -1;
+int g_NumEliminated = -1;
+int g_BossHealth = 0;
+unsigned int g_BestLapTime;
 unsigned long g_RaceStartTime;
 
 // Function calls from the game
 GetBestLap_t GetBestLapFromLicense = nullptr;
+Mission_lpGetScoreType_t Mission_lpGetScoreType;
+Mission_lpGetPlugin_t Mission_lpGetPlugin;
 
 void(__thiscall *Mission_UpdateMissionLogic)(void*);
 void __fastcall OnUpdateMissionLogic(void* self)
@@ -31,13 +35,13 @@ void __fastcall OnUpdateMissionLogic(void* self)
     RacerInfo* racer = GetRacerInfo();
     if (mission == nullptr || racer == nullptr) return;
 
-    // Sneaking in lap check since it doesn't seem to be called otherwise
-    // in mission race/grand prix modes, might just be an oversight on my part though.
-    int lap = GetCurrentDisplayLap();
-    if (g_LastRank != racer->MissionRank || g_LastLapCheck != lap)
+    int eliminees = GetNumEliminated();
+    int health = GetBossHealth();
+    if (g_MissionRank != racer->MissionRank || eliminees != g_NumEliminated || health != g_BossHealth)
     {
-        g_LastLapCheck = lap;
-        g_LastRank = racer->MissionRank;
+        g_NumEliminated = eliminees;
+        g_BossHealth = health;
+        g_MissionRank = racer->MissionRank;
         UpdateRichPresence_Racing(g_RaceStartTime);
     }
 }
@@ -49,9 +53,9 @@ void __fastcall OnUpdateCurrentPositions(void* self)
     if (!g_IsRacing) return;
 
     int pos = GetCurrentRacePosition();
-    if (g_LastRacePosition != pos)
+    if (g_RacePosition != pos)
     {
-        g_LastRacePosition = pos;
+        g_RacePosition = pos;
         UpdateRichPresence_Racing(g_RaceStartTime);
     }
 }
@@ -70,18 +74,18 @@ void __fastcall OnLapComplete(void* self)
     if (game_type == kGameType_TimeTrial)
     {
         unsigned int time = GetBestLap();
-        if (time != g_LastBestTime)
+        if (time != g_BestLapTime)
         {
-            g_LastBestTime = time;
+            g_BestLapTime = time;
             UpdateRichPresence_Racing(g_RaceStartTime);
         }
     }
     else
     {
         int lap = GetCurrentDisplayLap();
-        if (g_LastLapCheck != lap)
+        if (g_Lap != lap)
         {
-            g_LastLapCheck = lap;
+            g_Lap = lap;
             UpdateRichPresence_Racing(g_RaceStartTime);
         }
     }
@@ -100,10 +104,12 @@ void __cdecl OnRaceHandlerCleanup(bool b)
     UpdateRichPresence_NotRacing();
 
     // Reset all our state variables back to their defaults
-    g_LastLapCheck = -1;
-    g_LastRacePosition = -1;
-    g_LastBestTime = -1;
-    g_LastRank = -1;
+    g_Lap = -1;
+    g_RacePosition = -1;
+    g_BestLapTime = -1;
+    g_MissionRank = -1;
+    g_NumEliminated = -1;
+    g_BossHealth = 0;
     g_IsRacing = false;
 }
 
@@ -114,8 +120,8 @@ void __cdecl OnSetIsRacing(bool is_racing)
     {
         g_RaceStartTime = time(nullptr);
         g_IsRacing = true;
-        g_LastLapCheck = GetCurrentDisplayLap();
-        g_LastRacePosition = GetCurrentRacePosition();
+        g_Lap = GetCurrentDisplayLap();
+        g_RacePosition = GetCurrentRacePosition();
         
         UpdateRichPresence_Racing(g_RaceStartTime);
     }
@@ -126,6 +132,8 @@ void __cdecl OnSetIsRacing(bool is_racing)
 void AttachGameFunctions()
 {
     GetBestLapFromLicense = (GetBestLap_t)((uintptr_t)g_MemoryBase + 0xBA1C0);
+    Mission_lpGetScoreType = (Mission_lpGetScoreType_t)((uintptr_t)g_MemoryBase + 0xC8C90);
+    Mission_lpGetPlugin = (Mission_lpGetPlugin_t)((uintptr_t)g_MemoryBase + 0xC8BA0);
 }
 
 void InitHooks()
