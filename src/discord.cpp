@@ -135,8 +135,8 @@ void UpdateRichPresence_Racing(unsigned long start_time)
             }
             case kPresenceDetails_GrandPrix:
             {
-                state = fmt::format("Race {:d} - {}", 
-                    GetCurrentTournamentStageIndex() + 1, GetExtraRaceDetails(racer, race_state));
+                int race_index = GetCurrentTournamentStageIndex() + 1;
+                state = fmt::format("Race {:d} - {}", race_index, GetExtraRaceDetails(racer, race_state));
                 break;
             }
             case kPresenceDetails_TimeTrial:

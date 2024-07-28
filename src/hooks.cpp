@@ -112,6 +112,14 @@ void __fastcall OnLapComplete(void* self)
     }
 }
 
+void(__thiscall *State_RaceOver_OnEnter)(void*);
+void __fastcall OnRaceComplete(void* self)
+{
+    // Trigger one final presence update as the race ends
+    UpdateRichPresence_Racing(g_RaceStartTime);
+    State_RaceOver_OnEnter(self);
+}
+
 void(__thiscall *RaceHandler_Update)(void*);
 void __fastcall OnUpdateRaceState(void* self)
 {
@@ -136,7 +144,9 @@ void __fastcall OnUpdateRaceState(void* self)
             g_RaceStartTime = time(nullptr);
         }
 
-        if (race_state >= STATE_WaitingToStart && race_state <= STATE_RaceOver)
+        // Race over gets handled in a separate hook to account for missions and tournaments variables
+        // getting modified in the RaceOver enter function.
+        if (race_state >= STATE_WaitingToStart && race_state <= STATE_Racing)
             UpdateRichPresence_Racing(g_RaceStartTime);
     }
 }
@@ -156,7 +166,9 @@ void InitHooks()
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCD090), (void*)&OnUpdateCurrentPositions, (void**)&RaceHandler_UpdateCurrentPositions);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCB900), (void*)&OnUpdateMissionLogic, (void**)&Mission_UpdateMissionLogic);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCBB80), (void*)&OnUpdateRaceState, (void**)&RaceHandler_Update);
+    MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0x1B23B0), (void*)&OnRaceComplete, (void**)&State_RaceOver_OnEnter);
     
+
     MH_EnableHook(MH_ALL_HOOKS);
 
     AttachGameFunctions();
