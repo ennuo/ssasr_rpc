@@ -132,3 +132,13 @@ std::map<int, MissionInfo> g_MissionInfoMap =
     { sumohash("Mission_63"), { "ROBOT CUP", "Grand Prix", kPresenceDetails_GrandPrix } },
     { sumohash("Mission_64"), { "SAVE THE DAY SONIC!!", "Finale!", kPresenceDetails_Boss } },
 };
+
+const char* g_Ranks[7] = { "AAA", "AA", "A", "B", "C", "D", "E" };
+const char* g_Tournaments[6] = {
+    "CHAO CUP",
+    "GRAFFITI CUP",
+    "EGG CUP",
+    "HORROR CUP",
+    "SAMBA CUP",
+    "MONKEY CUP"
+};

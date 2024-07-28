@@ -6,9 +6,6 @@
 #include "native.h"
 #include "ssr.h"
 
-// Just setting it to true so it triggers the startup status
-bool g_IsRacing = true;
-
 // Bunch of state variables so we're not constantly updating
 // the rich presence when we don't have to.
 int g_Lap = -1;
@@ -18,48 +15,65 @@ int g_NumEliminated = -1;
 int g_BossHealth = 0;
 unsigned int g_BestLapTime;
 unsigned long g_RaceStartTime;
+int g_RaceState;
 
 // Function calls from the game
 GetBestLap_t GetBestLapFromLicense = nullptr;
 Mission_lpGetScoreType_t Mission_lpGetScoreType;
 Mission_lpGetPlugin_t Mission_lpGetPlugin;
 
-// void(__thiscall *State_MissionModeComplete_OnEnter)(void*);
-// void __fastcall OnMissionComplete(void* self)
-// {
-//     State_MissionModeComplete_OnEnter(self);
-//     if (!g_IsRacing) return;
-//     UpdateRichPresence_Racing(g_RaceStartTime);
-// }
-
 void(__thiscall *Mission_UpdateMissionLogic)(void*);
 void __fastcall OnUpdateMissionLogic(void* self)
 {
     Mission_UpdateMissionLogic(self);
-    if (!g_IsRacing) return;
 
     // Only check for rank updates if we're both racing and in a mission.
     MissionInfo* mission = GetMissionInfo();
     RacerInfo* racer = GetRacerInfo();
     if (mission == nullptr || racer == nullptr) return;
 
-    int eliminees = GetNumEliminated();
-    int health = GetBossHealth();
-    if (g_MissionRank != racer->MissionRank || eliminees != g_NumEliminated || health != g_BossHealth)
+    bool changes = false;
+    switch (mission->Presence)
     {
-        g_NumEliminated = eliminees;
-        g_BossHealth = health;
-        g_MissionRank = racer->MissionRank;
-        UpdateRichPresence_Racing(g_RaceStartTime);
+        case kPresenceDetails_Elimination:
+        {
+            int eliminees = GetNumEliminated();
+            if (eliminees != g_NumEliminated)
+            {
+                g_NumEliminated = eliminees;
+                changes = true;
+            }
+            break;
+        }
+        case kPresenceDetails_Boss:
+        {
+            int health = GetBossHealth();
+            if (health != g_BossHealth)
+            {
+                g_BossHealth = health;
+                changes = true;
+            }
+            break;
+        }
+        default:
+        {
+            if (g_MissionRank != racer->MissionRank)
+            {
+                g_MissionRank = racer->MissionRank;
+                changes = true;
+            }
+            break;
+        }
     }
+
+    if (changes)
+        UpdateRichPresence_Racing(g_RaceStartTime);
 }
 
 void(__thiscall *RaceHandler_UpdateCurrentPositions)(void*);
 void __fastcall OnUpdateCurrentPositions(void* self)
 {
     RaceHandler_UpdateCurrentPositions(self);
-    if (!g_IsRacing) return;
-
     int pos = GetCurrentRacePosition();
     if (g_RacePosition != pos)
     {
@@ -72,7 +86,6 @@ void(__thiscall *Racer_OnLapComplete)(void*);
 void __fastcall OnLapComplete(void* self)
 {
     Racer_OnLapComplete(self);
-    if (!g_IsRacing) return;
 
     // The function is called OnLapComplete, but it seems to be
     // triggered every frame, so we'll just check if our lap check matches
@@ -99,47 +112,33 @@ void __fastcall OnLapComplete(void* self)
     }
 }
 
-void(__cdecl *RaceHandler_Cleanup)(bool);
-void __cdecl OnRaceHandlerCleanup(bool b)
+void(__thiscall *RaceHandler_Update)(void*);
+void __fastcall OnUpdateRaceState(void* self)
 {
-    RaceHandler_Cleanup(b);
-    
-    // This gets called a few times during the loading screen,
-    // don't want to reset the state timer or update the presence
-    // if we don't have to.
-    if (!g_IsRacing) return;
+    RaceHandler_Update(self);
 
-    UpdateRichPresence_NotRacing();
-
-    // Reset all our state variables back to their defaults
-    g_Lap = -1;
-    g_RacePosition = -1;
-    g_BestLapTime = -1;
-    g_MissionRank = -1;
-    g_NumEliminated = -1;
-    g_BossHealth = 0;
-    g_IsRacing = false;
-}
-
-void(__cdecl *RaceHandler_SetIsRacing)(bool);
-void __cdecl OnSetIsRacing(bool is_racing)
-{
-    if (is_racing && !g_IsRacing)
+    int race_state = GetRaceManagerState();
+    if (race_state != g_RaceState)
     {
-        g_RaceStartTime = time(nullptr);
-        g_IsRacing = true;
-        g_Lap = GetCurrentDisplayLap();
-        g_RacePosition = GetCurrentRacePosition();
-        
-        UpdateRichPresence_Racing(g_RaceStartTime);
+        g_RaceState = race_state;
+        bool gp = InTournament();
+
+        // We've gone back to the menu
+        if (race_state == STATE_Idle && !gp)
+        {
+            UpdateRichPresence_NotRacing();
+            return;
+        }
+
+        // Make sure the time doesn't reset between GP races
+        if (race_state == STATE_WaitingToStart && (!gp || GetCurrentTournamentStageIndex() == 0))
+        {
+            g_RaceStartTime = time(nullptr);
+        }
+
+        if (race_state >= STATE_WaitingToStart && race_state <= STATE_RaceOver)
+            UpdateRichPresence_Racing(g_RaceStartTime);
     }
-
-    // This one will be triggered once the race ends
-    // the actual end of the race is handled in cleanup.
-    if (!is_racing && g_IsRacing)
-        UpdateRichPresence_Racing(g_RaceStartTime);
-
-    RaceHandler_SetIsRacing(is_racing);
 }
 
 void AttachGameFunctions()
@@ -153,12 +152,10 @@ void InitHooks()
 {
     MH_Initialize();
 
-    MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCC930), (void*)&OnRaceHandlerCleanup, (void**)&RaceHandler_Cleanup);
-    MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCCE70), (void*)&OnSetIsRacing, (void**)&RaceHandler_SetIsRacing);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xED320), (void*)&OnLapComplete, (void**)&Racer_OnLapComplete);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCD090), (void*)&OnUpdateCurrentPositions, (void**)&RaceHandler_UpdateCurrentPositions);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCB900), (void*)&OnUpdateMissionLogic, (void**)&Mission_UpdateMissionLogic);
-    // MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0x1B32E0), (void*)&OnMissionComplete, (void**)&State_MissionModeComplete_OnEnter);
+    MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCBB80), (void*)&OnUpdateRaceState, (void**)&RaceHandler_Update);
     
     MH_EnableHook(MH_ALL_HOOKS);
 

@@ -15,20 +15,6 @@ const char* g_SteamID = "34190";
 extern void InitHooks();
 extern void CloseHooks();
 
-const int g_NumRankStrings = 7;
-const char* g_RankStrings[] = { "AAA", "AA", "A", "B", "C", "D", "E" };
-
-const int g_NumTournaments = 6;
-const char* g_Tournaments[] = {
-    "CHAO CUP",
-    "GRAFFITI CUP",
-    "EGG CUP",
-    "HORROR CUP",
-    "SAMBA CUP",
-    "MONKEY CUP",
-    "SEASIDE CUP"
-};
-
 void InitDiscord()
 {
     DiscordEventHandlers handlers;
@@ -47,45 +33,22 @@ void UpdateRichPresence_NotRacing()
     memset(&presence, 0, sizeof(DiscordRichPresence));
     presence.startTimestamp = time(nullptr);
     presence.largeImageKey = "default";
+    presence.details = "In Menus";
     Discord_UpdatePresence(&presence);
 }
 
-std::string GetLapTimeString(unsigned int time)
+std::string GetExtraRaceDetails(RacerInfo* racer, int race_state)
 {
-    if (time == -1 || time == 0)
-        return "--:--.---";
+    if (race_state < STATE_Racing)
+        return "Waiting to start";
 
-    unsigned int logic_rate = GetGameLogicRate();
-
-    // There's probably some nicer way to represent this, but I just stole
-    // it straight from the Ghidra disassembly.
-
-    unsigned int fractional = ((time % (logic_rate << 0xc)) * 1000) / logic_rate >> 0xc;
-    unsigned int seconds = time / logic_rate >> 0xc;
-    unsigned int minutes = seconds / 0x3c;
-    if (minutes / 0x3c != 0)
+    if (race_state == STATE_Racing)
     {
-        seconds = 0x3b;
-        minutes = 0x3b;
-        fractional = 999;
+        return fmt::format("Lap {:d} of {:d}, {}", 
+            GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
     }
 
-    return fmt::format("{:02d}:{:02d}.{:03d}", minutes % 0x3c, seconds % 0x3c, fractional);
-}
-
-std::string MakePositionDisplay(int position)
-{
-    position = position + 1;
-    std::string suffix;
-    switch (position)
-    {
-        case 1: suffix = "ˢᵗ"; break;
-        case 2: suffix = "ⁿᵈ"; break;
-        case 3: suffix = "ʳᵈ"; break;
-        default: suffix = "ᵗʰ"; break;
-    }
-
-    return std::to_string(position) + suffix;
+    return "Finished " + MakePositionDisplay(racer->CurrentPosition);
 }
 
 void UpdateRichPresence_Racing(unsigned long start_time)
@@ -93,6 +56,12 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     DiscordRichPresence presence;
     memset(&presence, 0, sizeof(DiscordRichPresence));
     presence.startTimestamp = start_time;
+
+    int race_state = GetRaceManagerState();
+    bool in_gp = InTournament();
+
+    bool racing = race_state == STATE_Racing;
+    bool finished = race_state > STATE_Racing;
 
     MissionInfo* mission = GetMissionInfo();
 
@@ -103,6 +72,10 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     // just makes stuff easier to handle to force set it.
     if (mission != nullptr)
         game_type = kGameType_Mission;
+    // If we're given a mission game type and the mission is null for whatever reason,
+    // just don't update the state so we can at least prevent a crash.
+    else if (game_type == kGameType_Mission)
+        return;
 
     const char* game_type_name = GetGameTypeDisplayName();
     std::string details = GetTrackDisplayName();
@@ -128,7 +101,7 @@ void UpdateRichPresence_Racing(unsigned long start_time)
                 details_type = mission->Presence;
 
                 // Always show your rank in status after a mission is completed.
-                if (!InTournament() && !IsRacing())
+                if (!in_gp && finished)
                     details_type = kPresenceDetails_Rank;
                 
                 break;
@@ -137,7 +110,7 @@ void UpdateRichPresence_Racing(unsigned long start_time)
             case kGameType_Race:
             case kGameType_NetworkRace:
             {
-                if (InTournament())
+                if (in_gp)
                 {
                     details_type = kPresenceDetails_GrandPrix;
                     presence.largeImageText = GetTrackDisplayName();
@@ -157,13 +130,13 @@ void UpdateRichPresence_Racing(unsigned long start_time)
         {
             case kPresenceDetails_Race:
             {
-                state = fmt::format("{} - Lap {:d} of {:d}, {}", state, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+                state = fmt::format("{} - {}", state, GetExtraRaceDetails(racer, race_state));
                 break;
             }
             case kPresenceDetails_GrandPrix:
             {
-                state = fmt::format("Race {:d} - Lap {:d} of {:d}, {}", 
-                    GetCurrentTournamentStageIndex() + 1, GetCurrentDisplayLap(), racer->NumLaps - 1, MakePositionDisplay(racer->CurrentPosition));
+                state = fmt::format("Race {:d} - {}", 
+                    GetCurrentTournamentStageIndex() + 1, GetExtraRaceDetails(racer, race_state));
                 break;
             }
             case kPresenceDetails_TimeTrial:
@@ -187,8 +160,8 @@ void UpdateRichPresence_Racing(unsigned long start_time)
             case kPresenceDetails_Rank:
             {
                 const char* rank = "None";
-                if (racer->MissionRank >= 0 && racer->MissionRank < g_NumRankStrings)
-                    rank = g_RankStrings[racer->MissionRank];
+                if (racer->MissionRank >= 0 && racer->MissionRank < g_NumRanks)
+                    rank = g_Ranks[racer->MissionRank];
                 state = fmt::format("{} - Rank: {}", state, rank);
                 break;
             }
@@ -197,11 +170,17 @@ void UpdateRichPresence_Racing(unsigned long start_time)
 
     presence.state = state.c_str();
     presence.details = details.c_str();
-    
-    std::string racer_id = GetRacerId();
-    std::transform(racer_id.begin(), racer_id.end(), racer_id.begin(), 
-        [](unsigned char c) { return std::tolower(c); });
-    presence.smallImageKey = racer_id.c_str();
+
+    char* racer_id = GetRacerId();
+    if (racer_id != nullptr)
+    {
+        // Fairly sure I have to convert it to lowercase for Discord?
+        // I haven't actually checked honestly.
+        std::string racer_id_lower = GetRacerId();
+        std::transform(racer_id_lower.begin(), racer_id_lower.end(), racer_id_lower.begin(), 
+            [](unsigned char c) { return std::tolower(c); });
+        presence.smallImageKey = racer_id_lower.c_str();
+    }
 
     // Set track preview image as large image
     const char* track_id = GetTrackId();

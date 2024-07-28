@@ -4,6 +4,8 @@
 #include "native.h"
 #include "lookup.h"
 
+#include <string>
+
 enum GameType
 {
     kGameType_None,
@@ -13,6 +15,89 @@ enum GameType
     kGameType_CarViewer,
     kGameType_NetworkRace,
     kGameType_TsoViewer
+};
+
+enum StateID
+{
+    STATE_Undefined,
+    STATE_Control_AIOffTrack,
+    STATE_Control_TrappedRecovery,
+    STATE_Control_AIRacing,
+    STATE_Control_ChaseHQ,
+    STATE_Control_AIRacing_DebugDriver,
+    STATE_Control_AIRacing_Pacifist,
+    STATE_Control_AIRacing_Finish,
+    STATE_Control_AIRacing_Fadeout,
+    STATE_Control_AIWrongWay,
+    STATE_Control_AIRacing_Autopilot,
+    STATE_Control_AIRacing_AutopilotOnRails,
+    STATE_Control_AIRacing_Erratic,
+    STATE_Control_AIRacing_ScreenFlip,
+    STATE_Control_AIRacing_Rainbow,
+    STATE_Control_Respot,
+    STATE_Control_Restart,
+    STATE_Control_Human,
+    STATE_Control_Human_Erratic,
+    STATE_Control_Human_MonkeyBall,
+    STATE_Control_Idle,
+    STATE_Control_Network,
+    STATE_Control_Ghost,
+    STATE_Control_StartingGridHuman,
+    STATE_Control_StartingGridAI,
+    STATE_Control_Traffic,
+    STATE_Control_Podium,
+    STATE_Control_Mission_Eliminated,
+    STATE_Control_Parked,
+    STATE_Control_Mission_Pickup,
+    STATE_Control_Mission_Avoid,
+    STATE_Control_Mission_Shoot,
+    STATE_Control_AIRacing_Coasting,
+    STATE_Control_AIRacing_DisconnectedController,
+    STATE_Control_AIRacing_RollingStart,
+    STATE_Control_AIRacing_RollingStart_Human,
+    STATE_Control_AIRacing_RollingStart_Human_KeepDistance,
+    STATE_Control_AIRacing_RollingStart_AI,
+    STATE_Control_AIRacing_RollingStart_AI_KeepDistance,
+    STATE_Control_AIStopped,
+    STATE_Control_MissionOver_Invisible,
+    STATE_Tournament_Idle,
+    STATE_Tournament_Loading,
+    STATE_Tournament_Starting,
+    STATE_Tournament_StartingMission,
+    STATE_Tournament_MissionComplete,
+    STATE_Tournament_Complete,
+    STATE_Tournament_PlayingMission,
+    STATE_Tournament_EndSequence,
+    STATE_Idle,
+    STATE_Loading,
+    STATE_SetupObjectManager,
+    STATE_SetupRace,
+    STATE_RestartRace,
+    STATE_RestartRaceWithReload,
+    STATE_WaitingToStart,
+    STATE_WaitingToStartNoIntro,
+    STATE_TrackIntro,
+    STATE_CharacterIntro,
+    STATE_Countdown,
+    STATE_Racing,
+    STATE_WaitingForFinishers,
+    STATE_RaceOver,
+    STATE_Results,
+    STATE_Podium,
+    STATE_RetryExit,
+    STATE_AutoSave,
+    STATE_SegaMiles,
+    STATE_MissionModeComplete,
+    STATE_MissionInstructions,
+    STATE_Race_Results,
+    STATE_GrandPrixPodium,
+    STATE_TimeTrial_Results,
+    STATE_TimeTrial_Leaderboards,
+    STATE_TimeTrial_UploadGhost,
+    STATE_Mission_Results,
+    STATE_Mission_League,
+    STATE_Mission_GPUnlock,
+    STATE_Mission_GroupCupWin,
 };
 
 struct PyramidBlock {
@@ -131,5 +216,11 @@ extern Mission_lpGetPlugin_t Mission_lpGetPlugin;
 
 unsigned int GetPersonalBestLapTime();
 unsigned int GetSessionBestLapTime();
+
+int GetRaceManagerState();
+int GetTournamentManagerState();
+
+std::string GetLapTimeString(unsigned int time);
+std::string MakePositionDisplay(int position);
 
 #endif // SSR_H

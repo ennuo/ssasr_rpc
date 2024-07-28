@@ -1,5 +1,7 @@
 #include "ssr.h"
 
+#include <fmt/core.h>
+
 PyramidBlock* GetCurrentMission()
 {
     const int CURRENT_MISSION_ADDRESS = 0x912BE0;
@@ -39,7 +41,7 @@ int GetBossHealth()
     if (score_type == 0x34)
     {
         void* boss_plugin = Mission_lpGetPlugin(mission, 0x1e);
-        if (boss_plugin != 0)
+        if (boss_plugin != nullptr)
         {
             float initial_health = *(float*)((uintptr_t)boss_plugin + 0x42c);
             float health = *(float*)((uintptr_t)boss_plugin + 0x428);
@@ -327,4 +329,58 @@ const char* GetTrackDisplayName()
         return g_TrackNameMap[hash];
 
     return "Unknown";
+}
+
+int GetRaceManagerState()
+{
+    char* state_machine = GetAddress(0x8F7A98);
+    char* state = *(char**)(state_machine + 0x28);
+    if (state == nullptr) return STATE_Undefined;
+    return *(int*)(state + 0x4);
+}
+
+int GetTournamentManagerState()
+{
+    char* state_machine = GetAddress(0x9124F8);
+    char* state = *(char**)(state_machine + 0x28);
+    if (state == nullptr) return STATE_Undefined;
+    return *(int*)(state + 0x4);
+}
+
+std::string GetLapTimeString(unsigned int time)
+{
+    if (time == -1 || time == 0)
+        return "--:--.---";
+
+    unsigned int logic_rate = GetGameLogicRate();
+
+    // There's probably some nicer way to represent this, but I just stole
+    // it straight from the Ghidra disassembly.
+
+    unsigned int fractional = ((time % (logic_rate << 0xc)) * 1000) / logic_rate >> 0xc;
+    unsigned int seconds = time / logic_rate >> 0xc;
+    unsigned int minutes = seconds / 0x3c;
+    if (minutes / 0x3c != 0)
+    {
+        seconds = 0x3b;
+        minutes = 0x3b;
+        fractional = 999;
+    }
+
+    return fmt::format("{:02d}:{:02d}.{:03d}", minutes % 0x3c, seconds % 0x3c, fractional);
+}
+
+std::string MakePositionDisplay(int position)
+{
+    position = position + 1;
+    std::string suffix;
+    switch (position)
+    {
+        case 1: suffix = "ˢᵗ"; break;
+        case 2: suffix = "ⁿᵈ"; break;
+        case 3: suffix = "ʳᵈ"; break;
+        default: suffix = "ᵗʰ"; break;
+    }
+
+    return std::to_string(position) + suffix;
 }
