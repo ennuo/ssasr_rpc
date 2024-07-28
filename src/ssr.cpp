@@ -200,26 +200,37 @@ unsigned int GetGameLogicRate()
     return LoadMemory<unsigned int>(GAME_LOGIC_RATE_ADDRESS);
 }
 
-unsigned int GetBestLap()
+unsigned int GetSessionBestLapTime()
+{
+    RacerInfo* info = GetRacerInfo();
+    if (info != nullptr)
+        return info->BestLap;
+    return 0;
+}
+
+unsigned int GetPersonalBestLapTime()
 {
     int hash = GetTrackNameHash();
     unsigned int saved_time = GetBestLapFromLicense(hash, 0).Time;
-    unsigned int local_time = saved_time;
+    unsigned int local_time = GetSessionBestLapTime();
 
-    RacerInfo* info = GetRacerInfo();
-    if (info != nullptr)
-        local_time = info->BestLap;
-    
     if (local_time == 0 || local_time == -1) return saved_time;
 
     // I assume generic comparison works for this
     return local_time < saved_time ? local_time : saved_time;
+
 }
 
 bool IsRaceReadyToStart()
 {
     const int READY_TO_START_ADDRESS = 0x8F7A50;
     return LoadMemory<bool>(READY_TO_START_ADDRESS);
+}
+
+bool IsRacing()
+{
+    const int IS_RACING_ADDRESS = 0x8F7A51;
+    return LoadMemory<bool>(IS_RACING_ADDRESS);
 }
 
 int GetRacerNameHash()

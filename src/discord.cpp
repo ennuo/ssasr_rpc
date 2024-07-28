@@ -98,9 +98,9 @@ void UpdateRichPresence_Racing(unsigned long start_time)
 
     int game_type = GetGameType();
     int details_type = kPresenceDetails_None;
-
-    // Some missions use race/gp game types, and I don't want to deal with them at this very moment
-    // will handle it at some point though, probably.
+    
+    // Mission GPs don't have game type set to mission
+    // just makes stuff easier to handle to force set it.
     if (mission != nullptr)
         game_type = kGameType_Mission;
 
@@ -126,6 +126,11 @@ void UpdateRichPresence_Racing(unsigned long start_time)
                 details = mission->Name;
                 state = mission->Type;
                 details_type = mission->Presence;
+
+                // Always show your rank in status after a mission is completed.
+                if (!InTournament() && !IsRacing())
+                    details_type = kPresenceDetails_Rank;
+                
                 break;
             }
 
@@ -163,7 +168,10 @@ void UpdateRichPresence_Racing(unsigned long start_time)
             }
             case kPresenceDetails_TimeTrial:
             {
-                state = fmt::format("{} - PB: {}", game_type_name, GetLapTimeString(GetBestLap()));
+                presence.largeImageText = GetTrackDisplayName();
+
+                details = fmt::format("Time Trial - PB: {}", GetLapTimeString(GetPersonalBestLapTime()));
+                state = fmt::format("Session Best: {}", GetLapTimeString(GetSessionBestLapTime()));
                 break;
             }
             case kPresenceDetails_Elimination:
@@ -199,7 +207,7 @@ void UpdateRichPresence_Racing(unsigned long start_time)
     const char* track_id = GetTrackId();
     if (track_id == nullptr) track_id = "default";
     presence.largeImageKey = track_id;
-    
+
     Discord_UpdatePresence(&presence);
 }
 

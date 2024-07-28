@@ -130,5 +130,5 @@ std::map<int, MissionInfo> g_MissionInfoMap =
     { sumohash("Mission_61"), { "BEACH PARTY!", "Battle Race", kPresenceDetails_Rank } },
     { sumohash("Mission_62"), { "EVERY SECOND COUNTS!", "Time Gates", kPresenceDetails_Rank } },
     { sumohash("Mission_63"), { "ROBOT CUP", "Grand Prix", kPresenceDetails_GrandPrix } },
-    { sumohash("Mission_64"), { "SAVE THE DAY SONIC!!", "Hit Contest", kPresenceDetails_Boss } },
+    { sumohash("Mission_64"), { "SAVE THE DAY SONIC!!", "Finale!", kPresenceDetails_Boss } },
 };

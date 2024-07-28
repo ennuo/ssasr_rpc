@@ -24,6 +24,14 @@ GetBestLap_t GetBestLapFromLicense = nullptr;
 Mission_lpGetScoreType_t Mission_lpGetScoreType;
 Mission_lpGetPlugin_t Mission_lpGetPlugin;
 
+// void(__thiscall *State_MissionModeComplete_OnEnter)(void*);
+// void __fastcall OnMissionComplete(void* self)
+// {
+//     State_MissionModeComplete_OnEnter(self);
+//     if (!g_IsRacing) return;
+//     UpdateRichPresence_Racing(g_RaceStartTime);
+// }
+
 void(__thiscall *Mission_UpdateMissionLogic)(void*);
 void __fastcall OnUpdateMissionLogic(void* self)
 {
@@ -73,7 +81,7 @@ void __fastcall OnLapComplete(void* self)
     int game_type = GetGameType();
     if (game_type == kGameType_TimeTrial)
     {
-        unsigned int time = GetBestLap();
+        unsigned int time = GetSessionBestLapTime();
         if (time != g_BestLapTime)
         {
             g_BestLapTime = time;
@@ -126,6 +134,11 @@ void __cdecl OnSetIsRacing(bool is_racing)
         UpdateRichPresence_Racing(g_RaceStartTime);
     }
 
+    // This one will be triggered once the race ends
+    // the actual end of the race is handled in cleanup.
+    if (!is_racing && g_IsRacing)
+        UpdateRichPresence_Racing(g_RaceStartTime);
+
     RaceHandler_SetIsRacing(is_racing);
 }
 
@@ -145,6 +158,7 @@ void InitHooks()
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xED320), (void*)&OnLapComplete, (void**)&Racer_OnLapComplete);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCD090), (void*)&OnUpdateCurrentPositions, (void**)&RaceHandler_UpdateCurrentPositions);
     MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0xCB900), (void*)&OnUpdateMissionLogic, (void**)&Mission_UpdateMissionLogic);
+    // MH_CreateHook((void*)((uintptr_t)g_MemoryBase + 0x1B32E0), (void*)&OnMissionComplete, (void**)&State_MissionModeComplete_OnEnter);
     
     MH_EnableHook(MH_ALL_HOOKS);
 

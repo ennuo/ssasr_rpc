@@ -119,6 +119,7 @@ int GetCurrentRacePosition();
 int GetGameType();
 const char* GetGameTypeDisplayName();
 bool IsRaceReadyToStart();
+bool IsRacing();
 
 typedef BestTime&(__stdcall *GetBestLap_t)(int track, int index);
 typedef int(__fastcall *Mission_lpGetScoreType_t)(void* mission);
@@ -128,6 +129,7 @@ extern GetBestLap_t GetBestLapFromLicense;
 extern Mission_lpGetScoreType_t Mission_lpGetScoreType;
 extern Mission_lpGetPlugin_t Mission_lpGetPlugin;
 
-unsigned int GetBestLap();
+unsigned int GetPersonalBestLapTime();
+unsigned int GetSessionBestLapTime();
 
 #endif // SSR_H
