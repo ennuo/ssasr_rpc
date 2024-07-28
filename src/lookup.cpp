@@ -134,11 +134,19 @@ std::map<int, MissionInfo> g_MissionInfoMap =
 };
 
 const char* g_Ranks[7] = { "AAA", "AA", "A", "B", "C", "D", "E" };
-const char* g_Tournaments[6] = {
+const char* g_Tournaments[14] = {
     "CHAO CUP",
     "GRAFFITI CUP",
     "EGG CUP",
     "HORROR CUP",
     "SAMBA CUP",
-    "MONKEY CUP"
+    "MONKEY CUP",
+    "SEASIDE CUP",
+    "BLIZZARD CUP",
+    "TOKYO-TO CUP",
+    "CARNIVAL CUP",
+    "CASINO CUP",
+    "HORRIBLE CUP",
+    "SUPER MONKEY CUP",
+    "ROBOT CUP",
 };

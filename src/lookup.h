@@ -28,7 +28,7 @@ const int g_NumRanks = 7;
 const int g_NumTournaments = 6;
 
 extern const char* g_Ranks[7];
-extern const char* g_Tournaments[6];
+extern const char* g_Tournaments[14];
 
 
 #endif // LOOKUP_H
