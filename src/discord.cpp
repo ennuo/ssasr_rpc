@@ -170,16 +170,17 @@ void UpdateRichPresence_Racing(unsigned long start_time)
 
     presence.state = state.c_str();
     presence.details = details.c_str();
-
-    char* racer_id = GetRacerId();
-    if (racer_id != nullptr)
+    
+    const char* const racer_id_cstr = GetRacerId();
+    std::string small_image_key;
+    if (racer_id_cstr != nullptr)
     {
         // Fairly sure I have to convert it to lowercase for Discord?
         // I haven't actually checked honestly.
-        std::string racer_id_lower = GetRacerId();
-        std::transform(racer_id_lower.begin(), racer_id_lower.end(), racer_id_lower.begin(), 
+        small_image_key = racer_id_cstr;
+        std::transform(small_image_key.begin(), small_image_key.end(), small_image_key.begin(), 
             [](unsigned char c) { return std::tolower(c); });
-        presence.smallImageKey = racer_id_lower.c_str();
+        presence.smallImageKey = small_image_key.c_str();
     }
 
     // Set track preview image as large image
